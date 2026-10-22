@@ -129,9 +129,11 @@ fi
 log "Stage 2: assembling $(basename "$OUT")"
 BASE_MB=$(( $(stat -c %s "$BASE_TAR") / 1048576 ))
 ROOT_MB=$(( BASE_MB + BASE_MB / 5 + 600 ))          # room for miners + first updates
-# fixed layout (sectors of 512 bytes)
-P1=2048;    P1S=2048                                 # BIOS boot (GRUB core)
-P2=4096;    P2S=$((256*2048))                        # EFI system partition
+# fixed layout (sectors of 512 bytes). Classic MBR partition table like HiveOS uses:
+# old mining-board BIOSes (legacy USB boot) misread GPT sticks, and Windows shows the
+# SMOKEOS drive properly. UEFI boots MBR disks fine (ESP = type EF).
+P1=1;       P1S=2047                                 # gap after the MBR: GRUB core.img (legacy BIOS)
+P2=2048;    P2S=$((256*2048))                        # EFI system partition
 P3=$((P2+P2S)); P3S=$((64*2048))                     # SMOKEOS config (FAT, editable on any PC)
 P4=$((P3+P3S)); P4S=$((ROOT_MB*2048))                # root (ext4, grows on first boot)
 TOTAL=$(( (P4 + P4S + 2048) * 512 ))
@@ -139,14 +141,11 @@ TOTAL=$(( (P4 + P4S + 2048) * 512 ))
 rm -f "$OUT" "$OUT.xz"
 truncate -s "$TOTAL" "$OUT"
 sfdisk -q "$OUT" <<EOF
-label: gpt
-start=$P1, size=$P1S, type=21686148-6449-6E6F-744E-656564454649, name="bios"
-start=$P2, size=$P2S, type=C12A7328-F81F-11D2-BA4B-00A0C93EC93B, name="EFI"
-start=$P3, size=$P3S, type=EBD0A0A2-B9E5-4433-87C0-68B6B72699C7, name="SMOKEOS"
-start=$P4, size=$P4S, type=0FC63DAF-8483-4772-8E79-3D69D8477DE4, name="smokeos-root"
+label: dos
+start=$P2, size=$P2S, type=ef, bootable
+start=$P3, size=$P3S, type=e
+start=$P4, size=$P4S, type=83
 EOF
-# mark the protective MBR entry bootable (some old BIOSes refuse GPT disks otherwise)
-printf '\x80' | dd of="$OUT" bs=1 seek=446 conv=notrunc status=none
 
 loop() { losetup -f --show -o $(( $1 * 512 )) --sizelimit $(( $2 * 512 )) "$OUT"; }
 LEFI=$(loop $P2 $P2S); LCFG=$(loop $P3 $P3S); LROOT=$(loop $P4 $P4S)
@@ -165,6 +164,7 @@ R="$M/root"
 log "extracting base system"
 tar -C "$R" --numeric-owner -xpf "$BASE_TAR"
 cp -a "$ROOT/image/rootfs/." "$R/"
+chmod 755 "$R/usr/local/sbin/smokeos-boot"   # exec bits can be lost when committed from Windows
 
 log "installing SmokeOS $VERSION"
 install -d -m 755 "$R/opt/smokeos" "$R/etc/smokeos" "$R/smokeos-config" "$R/opt/smokeos/miners"
@@ -259,7 +259,7 @@ search --no-floppy --label smokeos-root --set=root
 set prefix=($root)/boot/grub
 EOF
 grub-mkimage -O i386-pc -o "$WORK/core.img" -c "$WORK/bios-early.cfg" -p "/boot/grub" \
-  biosdisk part_gpt ext2 search search_label normal configfile linux echo test
+  biosdisk part_msdos part_gpt ext2 search search_label normal configfile linux echo test
 python3 - "$OUT" "$WORK/core.img" "$P1" "$P1S" <<'PY'
 import struct, sys
 img, core_path, start, size = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4])
