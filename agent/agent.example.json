@@ -1,0 +1,16 @@
+{
+  "server_url": "https://YOUR-SERVER.YOUR-TAILNET.ts.net",
+  "token": "smk_PASTE_THE_RIG_TOKEN_HERE",
+  "interval": 15,
+
+  "manage_miner": true,
+  "miner_cmd": "/opt/smokeos/miners/krig/krig-miner --url prl-us.kryptex.network:8048 --user krxX8K7VD2/Big_Smoke",
+  "miner_api": "",
+
+  "temp_limit": 83,
+  "cool_temp": 65,
+  "restart_delay": 10,
+
+  "power_limits": {},
+  "core_locks": {}
+}

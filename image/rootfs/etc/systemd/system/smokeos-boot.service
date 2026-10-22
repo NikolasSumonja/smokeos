@@ -1,0 +1,14 @@
+[Unit]
+Description=SmokeOS boot setup (rig.conf, first boot, Tailscale)
+After=network-online.target local-fs.target
+Wants=network-online.target
+Before=smokeos-agent.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+TimeoutStartSec=900
+ExecStart=/usr/local/sbin/smokeos-boot
+
+[Install]
+WantedBy=multi-user.target

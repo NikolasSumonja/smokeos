@@ -1,0 +1,56 @@
+name: release
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      build_image:
+        description: "Also build the USB image"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check version
+        run: |
+          V=$(cat VERSION)
+          if [ "${GITHUB_REF_TYPE}" = "tag" ] && [ "v$V" != "${GITHUB_REF_NAME}" ]; then
+            echo "Tag ${GITHUB_REF_NAME} doesn't match VERSION $V"; exit 1; fi
+          echo "V=$V" >> "$GITHUB_ENV"
+      - name: Package + sign
+        env:
+          SMOKEOS_SIGNING_KEY: ${{ secrets.SMOKEOS_SIGNING_KEY }}
+        run: |
+          mkdir -p dist
+          git archive --format=tar.gz --prefix=smokeos/ -o "dist/smokeos-$V.tar.gz" HEAD
+          python3 tools/sign.py "dist/smokeos-$V.tar.gz"
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "v$V" >/dev/null 2>&1 || gh release create "v$V" --title "SmokeOS $V" --generate-notes
+          gh release upload "v$V" "dist/smokeos-$V.tar.gz" "dist/smokeos-$V.tar.gz.sig" --clobber
+
+  image:
+    needs: release
+    if: github.event_name == 'push' || inputs.build_image
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache || true
+      - name: Build USB image
+        run: sudo image/build-image.sh
+      - name: Upload image to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V=$(cat VERSION)
+          gh release upload "v$V" dist/smokeos-$V.img.xz --clobber

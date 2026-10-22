@@ -1,0 +1,15 @@
+[Unit]
+Description=SmokeOS rig agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStartPre=-/usr/bin/python3 /opt/smokeos/smokeos_guard.py
+ExecStart=/usr/bin/python3 /opt/smokeos/smokeos_agent.py
+Restart=always
+RestartSec=10
+User=root
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

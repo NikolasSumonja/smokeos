@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SmokeOS</title>
+<meta name="theme-color" content="#0d0f12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SmokeOS">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/static/icon.svg">
+<link rel="apple-touch-icon" href="/static/icon-180.png">
+<link rel="stylesheet" href="/static/xterm.css">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <a class="brand" href="#farm"><img src="/static/icon.svg" alt="">Smoke<span>OS</span></a>
+  <nav class="mainnav">
+    <a href="#farm" data-nav="farm">Farm</a>
+    <a href="#flightsheets" data-nav="flightsheets">Flight sheets</a>
+  </nav>
+  <div class="spacer"></div>
+  <span class="muted" id="updated"></span>
+  <button class="btn small menubtn" id="menuBtn" aria-label="Menu">☰<span class="badge" id="menuBadge" hidden>1</span></button>
+  <div class="hdractions" id="hdrActions">
+    <button class="btn small" id="updBtn">Updates<span class="badge" id="updBadge" hidden>1</span></button>
+    <button class="btn small" id="addRig">+ Rig</button>
+    <button class="btn small" id="auditBtn">Log</button>
+    <button class="btn small" id="logout">Log out</button>
+  </div>
+</header>
+
+<main id="view"></main>
+<nav class="bottombar" id="bottombar"></nav>
+
+<div class="modal" id="modal"><div class="box" id="modalBox"></div></div>
+<div class="toast" id="toast"></div>
+
+<div class="termwrap" id="termwrap" hidden>
+  <div class="termbar">
+    <span class="termtitle"><span class="mono">&gt;_</span> <b id="termRig"></b> <span class="muted" id="termState"></span></span>
+    <button class="btn small" id="termClose">Close shell</button>
+  </div>
+  <div id="termEl"></div>
+</div>
+
+<script src="/static/chart.umd.js"></script>
+<script src="/static/xterm.js"></script>
+<script src="/static/xterm-addon-fit.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>
